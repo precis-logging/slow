@@ -1,3 +1,4 @@
+var url = require('url');
 var Joi = require('joi');
 var path = require('path');
 var Handler = require('./lib/handler').Handler;
@@ -135,13 +136,13 @@ var registerUi = function(){
 };
 
 var Plugin = function(options){
+};
+
+Plugin.prototype.init = function(options){
   var logger = options.logger;
-  var config = this.config = defaults({display: {}}, options);
-  var server = options.server;
-  var ui = options.ui;
   var sockets = this.sockets = options.sockets;
   var store = this.store = options.stores.get(options.slowTransactionStoreName||'slow_transactions');
-
+  var config = this.config = defaults({display: {}}, options);
   this.handler = new Handler(defaults({
     logger: logger,
     sockets: sockets,
@@ -149,12 +150,20 @@ var Plugin = function(options){
     statsEvent: 'slow::stats::update',
     store: store,
   }, config));
+};
 
-  server.route(routes.call(this));
-  ui.register(registerUi.call(this));
+Plugin.prototype.register = function(options){
+  var register = options.register;
+  register({
+    ui: registerUi.call(this),
+    server: routes.call(this)
+  });
 };
 
 Plugin.prototype.push = function(record){
+  if(this.uiOnly){
+    return;
+  }
   if(!this.handler){
     return setImmediate(function(){
       this.push(record);
