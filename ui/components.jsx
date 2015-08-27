@@ -52,12 +52,12 @@ var SlowTransactionsTable = React.createClass({
       return(
         <tr key={record._id}>
           <td><Link to={"/slow/inspect/"+record._id}>{record._id}</Link></td>
-          <td>{record.hostname}</td>
-          <td>{record.pid}</td>
-          <td>{record.direction}</td>
+          <td><Link to={"/slow/inspect/"+record._id}>{record.hostname}</Link></td>
+          <td><Link to={"/slow/inspect/"+record._id}>{record.pid}</Link></td>
+          <td><Link to={"/slow/inspect/"+record._id}>{record.direction}</Link></td>
           <td><abbr title={record.url}>{record.url.substr(0, 100)}</abbr></td>
-          <td>{addCommas(Math.round(record.duration))}ms</td>
-          <td>{new Date(record.time).toLocaleString()}</td>
+          <td><Link to={"/slow/inspect/"+record._id}>{addCommas(Math.round(record.duration))}ms</Link></td>
+          <td><Link to={"/slow/inspect/"+record._id}>{new Date(record.time).toLocaleString()}</Link></td>
         </tr>
       );
     });
@@ -65,13 +65,13 @@ var SlowTransactionsTable = React.createClass({
       <table className="table table-striped table-condensed">
         <thead>
           <tr>
-            <td>ID</td>
-            <td>Host</td>
-            <td>PID</td>
-            <td>Direction</td>
-            <td>URL</td>
-            <td>Duration</td>
-            <td>Time</td>
+            <th>ID</th>
+            <th>Host</th>
+            <th>PID</th>
+            <th>Direction</th>
+            <th>URL</th>
+            <th>Duration</th>
+            <th>Time</th>
           </tr>
         </thead>
         <tbody>
