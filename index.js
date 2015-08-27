@@ -5,7 +5,7 @@ var utils = require('precis-utils');
 var defaults = utils.defaults;
 
 var getLatest = function(req, reply){
-  return reply(this.handler.records);
+    return reply(this.handler.records);
 };
 
 var getTransaction = function(req, reply){
@@ -13,7 +13,37 @@ var getTransaction = function(req, reply){
   var matches = this.handler.records.filter((record)=>{
     return record._id.toString() === id;
   });
-  return reply(matches.length?matches[0]:null);
+  if(matches.length){
+    return reply(matches[0]);
+  }
+  this.store.asArray({_id: id}, function(err, result){
+    if(err){
+      return reply(err);
+    }
+    var matches = result[result.root];
+    if(Array.isArray(matches) && matches.length){
+      return reply(matches[0]);
+    }
+    return reply(false);
+  });
+};
+
+var getStats = function(req, reply){
+  try{
+    return reply(this.handler.buckets.map(function(bucket){
+      return {
+        _id: bucket.key,
+        key: bucket.key,
+        time: bucket.time,
+        stats: {
+          count: bucket.stats.count,
+          slow: bucket.stats.slow
+        }
+      };
+    }));
+  }catch(e){
+    console.error(e);
+  }
 };
 
 var routes = function(){
@@ -25,6 +55,15 @@ var routes = function(){
         description: 'Returns the latest slow transactions',
         tags: ['api'],
         handler: getLatest.bind(this)
+      },
+    },
+    {
+      method: 'GET',
+      path: '/api/v1/slow/stats',
+      config:{
+        description: 'Returns gathered statistics for last 15 minutes',
+        tags: ['api'],
+        handler: getStats.bind(this)
       },
     },
     {
@@ -82,7 +121,14 @@ var registerUi = function(){
             event: 'slow::update',
             prefetch: '/api/v1/slow/transactions',
           }
-        }
+        },
+        {
+          name: 'SlowTransactionStats',
+          socketEvent: {
+            event: 'slow::stats::update',
+            prefetch: '/api/v1/slow/stats',
+          }
+        },
       ]
     },
   ];
@@ -94,11 +140,14 @@ var Plugin = function(options){
   var server = options.server;
   var ui = options.ui;
   var sockets = this.sockets = options.sockets;
+  var store = this.store = options.stores.get(options.slowTransactionStoreName||'slow_transactions');
 
   this.handler = new Handler(defaults({
     logger: logger,
     sockets: sockets,
     event: 'slow::update',
+    statsEvent: 'slow::stats::update',
+    store: store,
   }, config));
 
   server.route(routes.call(this));
