@@ -75,7 +75,7 @@ var SlowTransactionStats = React.createClass({
     var grouped = this.state.stats.reduce((accum, item)=>{
       var time = new Date(item.time).getTime();
       segs.forEach(function(segment){
-        if(time>segment.window){
+        if(time>=segment.window){
           segment.count += item.stats.count;
           segment.slow += item.stats.slow;
         }
