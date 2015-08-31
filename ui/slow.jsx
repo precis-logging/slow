@@ -31,6 +31,12 @@ var Page = React.createClass({
                 },
               ]}}
             />
+          <InjectedComponentSet
+            tagName="div"
+            containerRequired={false}
+            matching={{role: 'slow-transactions-graph'}}
+            exposedProps={{limit: 15}}
+            />
         <InjectedComponentSet
           tagName="div"
           containerRequired={false}

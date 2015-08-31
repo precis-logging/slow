@@ -2,6 +2,12 @@ var {
   Link,
 } = ReactRouter;
 
+var sortStats = function(a, b){
+  var t1 = (new Date(a.time)).getTime();
+  var t2 = (new Date(b.time)).getTime();
+  return t1-t2;
+};
+
 var addCommas = function(x) {
   var parts = x.toString().split(".");
   parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
@@ -27,7 +33,7 @@ var SlowTransactionStatsView = React.createClass({
     return (
       <div>
         <h3>{props.title}</h3>
-        <div><label>Since:</label> {new Date(props.window).toLocaleString()}</div>
+        <div><label>Since:</label> {props.since?new Date(props.since).toLocaleString():''}</div>
         <div><label>Slow:</label> {addCommas(props.slow)}</div>
         <div><label>Total:</label> {addCommas(props.count)}</div>
         <div><label>Percent Slow:</label> <span style={psStyle}>{pc}%</span></div>
@@ -67,7 +73,8 @@ var SlowTransactionStats = React.createClass({
         count: 0,
         slow: 0,
         title: item.title,
-        window: (new Date(now-(1000 * 60 * (item.minutes||1)))).getTime()
+        window: (new Date(now-(1000 * 60 * (item.minutes||1)))).getTime(),
+        since: false
       };
       return blocks;
     }, {});
@@ -78,6 +85,9 @@ var SlowTransactionStats = React.createClass({
         if(time>=segment.window){
           segment.count += item.stats.count;
           segment.slow += item.stats.slow;
+          if((!segment.since)||(time<segment.since)){
+            segment.since = time;
+          }
         }
       });
       return accum;
@@ -163,3 +173,56 @@ var SlowTransactionsTable = React.createClass({
 });
 
 Actions.register(SlowTransactionsTable, {role: 'slow-transactions-table'});
+
+var TimeSeries2Chart = D3RRC.TimeSeries2Chart;
+
+var SlowTransactionsGraph = React.createClass({
+  getInitialState(){
+    return {
+      stats: []
+    }
+  },
+  updateState(SlowTransactions){
+    var stats = SlowTransactions.items();
+    this.setState({stats});
+  },
+  componentDidMount(){
+    DataStore.getStore('SlowTransactionStats', function(err, SlowTransactions){
+      if(err){
+        alert(err);
+        return console.error(err);
+      }
+      this.unlisten = SlowTransactions.listen(()=>this.updateState(SlowTransactions));
+      this.updateState(SlowTransactions);
+    }.bind(this));
+  },
+  componentWillUnmount(){
+    this.unlisten&&this.unlisten();
+  },
+  render(){
+    var windowTime = new Date();
+    windowTime.setMinutes(windowTime.getMinutes()-15);
+    var data = this.state.stats.sort(sortStats).map((stat)=>{
+      let val = stat.stats.slow / stat.stats.count;
+      val = Math.round(val * 10000)/100;
+      return [new Date(stat.time), val];
+    }).filter((item)=>item[0].getTime()>=windowTime);
+    var style={
+      '.area': 'fill: steelblue; clip-path: url(#clip);',
+      '.axis path': 'fill: none; stroke: #000; shape-rendering: crispEdges;',
+      '.axis line': 'fill: none; stroke: #000; shape-rendering: crispEdges;',
+      '.brush .extent': 'stroke: #fff; fill-opacity: .125; shape-rendering: crispEdges;',
+    };
+    var contents = this.state.stats.length>0?<TimeSeries2Chart
+      chart-height={200}
+      chart-margin={{bottom: 50}}
+      chart-style={style}
+      data={data}
+      />:<span>Loading...</span>;
+    return (
+      <div>{contents}</div>
+    );
+  }
+});
+
+Actions.register(SlowTransactionsGraph, {role: 'slow-transactions-graph'});

@@ -92,7 +92,7 @@ var registerUi = function(){
           route: '/slow/overview',
           title: 'Slow Transactions',
           name: 'SlowTransactions',
-          section: 'Slow Transactions',
+          section: 'System',
           filename: path.resolve(__dirname, 'ui/slow.jsx'),
         },
         {
