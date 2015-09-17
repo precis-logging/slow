@@ -1,6 +1,6 @@
 {
   "name": "precis-slow",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Slow endpoint monitor for Precis UI.",
   "main": "index.js",
   "scripts": {
