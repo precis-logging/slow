@@ -31,7 +31,7 @@ var getTransaction = function(req, reply){
 
 var getStats = function(req, reply){
   try{
-    return reply(this.handler.buckets.map(function(bucket){
+    return reply(this.handler.buckets.filter((bucket)=>!!bucket).map(function(bucket){
       return {
         _id: bucket.key,
         key: bucket.key,
