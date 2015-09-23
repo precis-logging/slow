@@ -8,6 +8,7 @@ var sortStats = function(a, b){
   return t1-t2;
 };
 
+/*
 var addCommas = function(x) {
   var parts = x.toString().split(".");
   parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
@@ -16,6 +17,12 @@ var addCommas = function(x) {
 var isNumeric = function (n){
   return !isNaN(parseFloat(n)) && isFinite(n);
 };
+*/
+var {
+  addCommas,
+  isNumeric
+} = Support;
+
 var escapeHTML = (function(){
   var div = document.createElement('div');
   return function(str){
@@ -29,6 +36,8 @@ var SlowTransactionStatsView = React.createClass({
   render(){
     var props = this.props.stats;
     var pc = props.slow>0?Math.round(10000 * (props.slow / props.count))/100:0.0;
+    var ipc = props.inboundSlow>0?Math.round(10000 * (props.inboundSlow / props.inbound))/100:0.0;
+    var opc = props.outboundSlow>0?Math.round(10000 * (props.outboundSlow / props.outbound))/100:0.0;
     var psStyle = pc>1?{color: 'red', fontWeight: 'bold'}:{};
     return (
       <div>
@@ -36,6 +45,11 @@ var SlowTransactionStatsView = React.createClass({
         <div><label>Since:</label> {props.since?new Date(props.since).toLocaleString():''}</div>
         <div><label>Slow:</label> {addCommas(props.slow)}</div>
         <div><label>Total:</label> {addCommas(props.count)}</div>
+        <div><label>Slowest:</label> {addCommas(Math.floor(props.slowest))}ms</div>
+        <div><label>Inbound:</label> {addCommas(Math.floor(props.inbound))}</div>
+        <div><label>Outbound:</label> {addCommas(Math.floor(props.outbound))}</div>
+        <div><label>Inbound Slow:</label> {addCommas(Math.floor(props.inboundSlow))} ({ipc}%)</div>
+        <div><label>Outbound Slow:</label> {addCommas(Math.floor(props.outboundSlow))} ({opc}%)</div>
         <div><label>Percent Slow:</label> <span style={psStyle}>{pc}%</span></div>
       </div>
     );
@@ -72,6 +86,11 @@ var SlowTransactionStats = React.createClass({
       blocks[item.title] = {
         count: 0,
         slow: 0,
+        inbound: 0,
+        outbound: 0,
+        inboundSlow: 0,
+        outboundSlow: 0,
+        slowest: 0,
         title: item.title,
         window: (new Date(now-(1000 * 60 * (item.minutes||1)))).getTime(),
         since: false
@@ -85,6 +104,13 @@ var SlowTransactionStats = React.createClass({
         if(time>=segment.window){
           segment.count += item.stats.count;
           segment.slow += item.stats.slow;
+          segment.inbound +=  item.stats.inbound||0;
+          segment.outbound +=  item.stats.outbound||0;
+          segment.inboundSlow +=  item.stats.inboundSlow||0;
+          segment.outboundSlow +=  item.stats.outboundSlow||0;
+          if(segment.slowest < item.stats.slowest){
+            segment.slowest = item.stats.slowest;
+          }
           if((!segment.since)||(time<segment.since)){
             segment.since = time;
           }

@@ -36,10 +36,7 @@ var getStats = function(req, reply){
         _id: bucket.key,
         key: bucket.key,
         time: bucket.time,
-        stats: {
-          count: bucket.stats.count,
-          slow: bucket.stats.slow
-        }
+        stats: bucket.stats,
       };
     }));
   }catch(e){
